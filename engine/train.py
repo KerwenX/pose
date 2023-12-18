@@ -45,24 +45,18 @@ def train(argv):
 
     # build dataset annd dataloader
     # train_config_list = ['GPVPose','mytrain']
-    FLAGS.batch_size = 4
+    # FLAGS.batch_size = 4
     FLAGS.num_workers = 8
-    index = 1
     # ["bathtub", "bed", "bin", "bookcase", "cabinet", "chair", "display", "sofa", "table"]
-    FLAGS.per_obj = 'bed'
-    if index == 0:
-        # GPV pose train
-        train_dataset = PoseDataset(source=FLAGS.dataset, mode='train',
-                                    data_dir=FLAGS.dataset_dir, per_obj=FLAGS.per_obj)
+    # FLAGS.per_obj = 'bed'
 
-    elif index == 1:
-        # mytrain
-        FLAGS.dataset_dir = '/home/aston/Desktop/Datasets/pose_data'
-        FLAGS.obj_c = 9
-        FLAGS.feat_c_R = 1289
-        FLAGS.feat_c_ts = 1292
-        train_dataset = MaskDataset(source=FLAGS.dataset, mode='train',
-                                       data_dir=FLAGS.dataset_dir, per_obj=FLAGS.per_obj)
+    # mytrain
+    # FLAGS.dataset_dir = '/home/aston/Desktop/Datasets/pose_data'
+    FLAGS.obj_c = 9
+    FLAGS.feat_c_R = 1289
+    FLAGS.feat_c_ts = 1292
+    train_dataset = MaskDataset(source=FLAGS.dataset, mode='train',
+                                   data_dir=FLAGS.dataset_dir, per_obj=FLAGS.per_obj)
 
     Train_stage = 'PoseNet_only'
     network = HSPose(Train_stage)
