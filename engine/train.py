@@ -45,10 +45,11 @@ def train(argv):
 
     # build dataset annd dataloader
     # train_config_list = ['GPVPose','mytrain']
-    FLAGS.batch_size = 6
+    FLAGS.batch_size = 4
     FLAGS.num_workers = 8
     index = 1
-
+    # ["bathtub", "bed", "bin", "bookcase", "cabinet", "chair", "display", "sofa", "table"]
+    FLAGS.per_obj = 'bed'
     if index == 0:
         # GPV pose train
         train_dataset = PoseDataset(source=FLAGS.dataset, mode='train',
@@ -145,15 +146,26 @@ def train(argv):
 
         # save model
         if (epoch + 1) % FLAGS.save_every == 0 or (epoch + 1) == FLAGS.total_epoch:
-            torch.save(
-                {
-                'seed': seed,
-                'epoch': epoch,
-                'posenet_state_dict': network.state_dict(),
-                'scheduler': scheduler.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                },
-                '{0}/model_{1:02d}.pth'.format(FLAGS.model_save, epoch))
+            if FLAGS.per_obj != '':
+                torch.save(
+                    {
+                        'seed': seed,
+                        'epoch': epoch,
+                        'posenet_state_dict': network.state_dict(),
+                        'scheduler': scheduler.state_dict(),
+                        'optimizer': optimizer.state_dict(),
+                    },
+                    '{0}/{}_model_{1:02d}.pth'.format(FLAGS.model_save, FLAGS.per_obj, epoch))
+            else:
+                torch.save(
+                    {
+                    'seed': seed,
+                    'epoch': epoch,
+                    'posenet_state_dict': network.state_dict(),
+                    'scheduler': scheduler.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    },
+                    '{0}/model_{1:02d}.pth'.format(FLAGS.model_save, epoch))
         torch.cuda.empty_cache()
 
 # def write_to_summary(writter, optimizer, total_loss, fsnet_loss, prop_loss, recon_loss, global_step):
