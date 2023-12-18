@@ -12,7 +12,7 @@ from network.HSPose import HSPose
 FLAGS = flags.FLAGS
 from datasets.load_data import PoseDataset
 from datasets.load_data_roca import ScanNetDataset
-
+from datasets.load_data_new import MaskDataset
 from tqdm import tqdm
 import time
 import numpy as np
@@ -61,7 +61,7 @@ def train(argv):
         FLAGS.obj_c = 9
         FLAGS.feat_c_R = 1289
         FLAGS.feat_c_ts = 1292
-        train_dataset = ScanNetDataset(source=FLAGS.dataset, mode='train',
+        train_dataset = MaskDataset(source=FLAGS.dataset, mode='train',
                                        data_dir=FLAGS.dataset_dir, per_obj=FLAGS.per_obj)
 
     Train_stage = 'PoseNet_only'
@@ -110,7 +110,7 @@ def train(argv):
                       # model_point=data['model_point'].to(device).float(),
                       nocs_scale=data['nocs_scale'].to(device).float(),
                       do_loss=True,
-                roi_img=data['roi_img'].to(device).float(),
+                # roi_img=data['roi_img'].to(device).float(),
                 roi_mask=data['roi_mask'].to(device).float()
             )
             # print('net_process', time.time()-begin)

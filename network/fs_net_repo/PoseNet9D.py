@@ -25,7 +25,7 @@ class PoseNet9D(nn.Module):
         # self.image_feat = ImageFeat(in_channel=3, out_channel=1028)
         self.mask_feat = ImageFeat(in_channel=1, out_channel=1028)
 
-    def forward(self, points, obj_id, roi_img, roi_mask):
+    def forward(self, points, obj_id, roi_mask):
         bs, p_num = points.shape[0], points.shape[1]
         # recon, face, feat = self.face_recon(points - points.mean(dim=1, keepdim=True), obj_id)
         feat = self.face_recon(points - points.mean(dim=1, keepdim=True), obj_id)
