@@ -5,7 +5,7 @@ import math
 import torch
 from absl import app
 import sys
-sys.path.append('..')
+sys.path.insert(0,os.path.abspath(__file__).rsplit('/',2)[0])
 from config.config import *
 from tools.training_utils import build_lr_rate, build_optimizer
 from network.HSPose import HSPose 
