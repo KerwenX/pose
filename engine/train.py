@@ -4,7 +4,8 @@ import random
 import math
 import torch
 from absl import app
-
+import sys
+sys.path.append('..')
 from config.config import *
 from tools.training_utils import build_lr_rate, build_optimizer
 from network.HSPose import HSPose 
