@@ -145,7 +145,7 @@ class MaskDataset(data.Dataset):
         self.real_intrinsics = np.array([[591.0125, 0, 322.525], [0, 590.16775, 244.11084], [0, 0, 1]], dtype=float)
 
         # full path : /home/aston/Desktop/Datasets/pose_data/intrinsics/scene0000_00/intrinscics_color.txt
-        self.intrinsics_prefix = '/home/aston/Desktop/Datasets/pose_data/intrinsics'
+        self.intrinsics_prefix = os.path.join(self.data_dir,'intrinsics')
 
         self.invaild_list = []
         # self.mug_sym = mmcv.load(os.path.join(self.data_dir, 'Real/train/mug_handle.pkl'))
