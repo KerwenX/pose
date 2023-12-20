@@ -244,6 +244,10 @@ class MaskDataset(data.Dataset):
         mask_target[mask != inst_id] = 0.0
         mask_target[mask == inst_id] = 1.0
 
+        # plt.figure()
+        # plt.imshow(mask_target)
+        # plt.show()
+
         # depth[mask_target == 0.0] = 0.0
         roi_mask = crop_resize_by_warp_affine(
             mask_target, bbox_center, scale, FLAGS.img_size, interpolation=cv2.INTER_NEAREST
@@ -482,7 +486,7 @@ def main(argv):
     loader = torch.utils.data.DataLoader(
         test_data,
         batch_size=2,
-        num_workers=8,
+        num_workers=1,
         shuffle=True
     )
     for sample in loader:

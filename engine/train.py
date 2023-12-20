@@ -27,6 +27,7 @@ device = 'cuda'
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 def train(argv):
+    FLAGS.model_save = os.path.join('output',f"{FLAGS.per_obj}-models")
     if FLAGS.resume:
         checkpoint = torch.load(FLAGS.resume_model)
         if 'seed' in checkpoint:
@@ -87,6 +88,7 @@ def train(argv):
                                                    shuffle=True )
     network.train()
     global_step = train_steps * s_epoch  # record the number iteration
+    torch.cuda.empty_cache()
     for epoch in range(s_epoch, FLAGS.total_epoch):
         i = 0
         for data in tqdm(train_dataloader, desc=f'Training {epoch}/{FLAGS.total_epoch}', dynamic_ncols=True):
@@ -150,7 +152,7 @@ def train(argv):
                         'scheduler': scheduler.state_dict(),
                         'optimizer': optimizer.state_dict(),
                     },
-                    '{0}/{}_model_{1:02d}.pth'.format(FLAGS.model_save, FLAGS.per_obj, epoch))
+                    '{0}/{}_model_{:02d}.pth'.format(FLAGS.model_save, FLAGS.per_obj, epoch))
             else:
                 torch.save(
                     {
@@ -160,7 +162,7 @@ def train(argv):
                     'scheduler': scheduler.state_dict(),
                     'optimizer': optimizer.state_dict(),
                     },
-                    '{0}/model_{1:02d}.pth'.format(FLAGS.model_save, epoch))
+                    '{0}/model_{:02d}.pth'.format(FLAGS.model_save, epoch))
         torch.cuda.empty_cache()
 
 # def write_to_summary(writter, optimizer, total_loss, fsnet_loss, prop_loss, recon_loss, global_step):
