@@ -22,7 +22,7 @@ from tools.dataset_utils import *
 import matplotlib.pyplot as plt
 import open3d as o3d
 from absl import app
-class MaskDataset(data.Dataset):
+class CADMaskDataset(data.Dataset):
     def __init__(self, source=None, mode='train', data_dir=None,
                  n_pts=1024, img_size=256, per_obj=''):
         '''
@@ -39,6 +39,10 @@ class MaskDataset(data.Dataset):
         self.n_pts = n_pts
         self.img_size = img_size
 
+        self.models = {}
+        with open(os.path.join(self.data_dir, 'id2point.pkl'), 'rb') as f:
+            self.models = pickle.load(f)
+
         # assert source in ['CAMERA', 'Real', 'CAMERA+Real']
         assert mode in ['train', 'test']
         img_list_path = ['train.txt','test.txt']
@@ -50,9 +54,10 @@ class MaskDataset(data.Dataset):
         else:
             del img_list_path[0]
 
-        img_list = [os.path.join('ScanNOCS',line.strip())
+        self.data_dir = os.path.join(self.data_dir, 'CAD_Mask_Expend')
+        img_list = [os.path.join('Masks',line.strip())
                     for line in open(os.path.join(self.data_dir, img_list_path[0]))]
-        subset_len = [len(img_list)]
+        # subset_len = [len(img_list)]
 
         self.cat_names = ["bathtub", "bed", "bin", "bookcase", "cabinet", "chair", "display", "sofa", "table"]
         self.cat_name2id = {
@@ -102,6 +107,19 @@ class MaskDataset(data.Dataset):
             '9': '04379243'
         }
 
+        self.shapenetid2cat_name_CAMERA = {
+             '02808440':1,
+             '02818832':2,
+             '02747177':3,
+             '02871439':4,
+             '02933112':5,
+             '03001627':6,
+             '03211117':7,
+             '04256520':8,
+             '04379243':9
+        }
+
+
         self.id2cat_name = self.id2cat_name_CAMERA
         self.per_obj = per_obj
         self.per_obj_id = self.cat_name2id[self.per_obj]
@@ -109,14 +127,7 @@ class MaskDataset(data.Dataset):
         if self.per_obj in self.cat_names:
             cat_name_id = self.cat_name2id[self.per_obj]
             catid_cad = self.id2cat_name_CAMERA[str(cat_name_id)]
-            scan2cad_image_alignment_filepath = os.path.join(self.data_dir,'scan2cad_image_alignments.json')
-            img_list_obj = []
-            with open(scan2cad_image_alignment_filepath,'r') as f:
-                image_alignment = json.load(f)['alignments']
-                for key in image_alignment:
-                    for model_dict in image_alignment[key]:
-                        if model_dict['catid_cad'] == catid_cad:
-                            img_list_obj.append(os.path.join('ScanNOCS',key))
+            img_list_obj = [name for name in img_list if catid_cad in name]
 
             # img_list_obj = 0
 
@@ -127,31 +138,6 @@ class MaskDataset(data.Dataset):
 
         self.img_list = img_list
         self.length = len(self.img_list)
-
-        # models = {}
-        # for path in model_file_path:
-        #     with open(os.path.join(data_dir, path), 'rb') as f:
-        #         models.update(cPickle.load(f))
-        # self.models = models
-
-        # move the center to the body of the mug
-        # meta info for re-label mug category
-        # with open(os.path.join(data_dir, 'obj_models/mug_meta.pkl'), 'rb') as f:
-        #     self.mug_meta = cPickle.load(f)
-
-        self.camera_intrinsics = np.array([[577.5, 0, 319.5], [0, 577.5, 239.5], [0, 0, 1]],
-                                          dtype=float)  # [fx, fy, cx, cy]
-        self.real_intrinsics = np.array([[591.0125, 0, 322.525], [0, 590.16775, 244.11084], [0, 0, 1]], dtype=float)
-
-        # full path : /home/aston/Desktop/Datasets/pose_data/intrinsics/scene0000_00/intrinscics_color.txt
-        self.intrinsics_prefix = os.path.join(self.data_dir,'intrinsics')
-
-        self.invaild_list = []
-        # self.mug_sym = mmcv.load(os.path.join(self.data_dir, 'Real/train/mug_handle.pkl'))
-
-        self.models = {}
-        with open(os.path.join(self.data_dir,'id2point.pkl'), 'rb') as f:
-            self.models = pickle.load(f)
 
         print('{} images found.'.format(self.length))
         # print('{} models loaded.'.format(len(self.models)))
@@ -164,60 +150,28 @@ class MaskDataset(data.Dataset):
         #  if per_obj is specified, then we only select the target object
         # index = index % self.length  # here something wrong
         img_path = os.path.join(self.data_dir, self.img_list[index])
-        if img_path in self.invaild_list:
-            return self.__getitem__((index + 1) % self.__len__())
-        try:
-            with open(img_path + '_label.pkl', 'rb') as f:
-                gts = cPickle.load(f)
-        except:
-            return self.__getitem__((index + 1) % self.__len__())
 
-        # intrinsics
-        scene = self.img_list[index].split('/')[1]
-        intrinsics_file = os.path.join(self.intrinsics_prefix, scene, 'intrinsics_color.txt')
-        out_camK = np.loadtxt(intrinsics_file)[:3,:3]
-        # img_type = 'real'
-
-        # select one foreground object,
-        # if specified, then select the object
-        if self.per_obj != '':
-            if self.per_obj_id not in gts['class_ids']:
-                return self.__getitem__((index+1)%self.__len__())
-            idx = gts['class_ids'].index(self.per_obj_id)
-        else:
-            idx = random.randint(0, len(gts['instance_ids']) - 1)
-
-        # rgb = cv2.imread(img_path + '_color.jpg')
-        # cv2.imshow(f'image {idx}', rgb)
-        # cv2.waitKey(0)
-        # cv2.destoryAllWindows()
-
-        # if rgb is not None:
-        #     rgb = rgb[:, :, :3]
-        # else:
-        #     return self.__getitem__((index + 1) % self.__len__())
-
-        # im_H, im_W = rgb.shape[0], rgb.shape[1]
-
-
-        # depth_path = img_path + '_depth.png'
-        # if os.path.exists(depth_path):
-        #     depth = load_depth(depth_path)
-        # else:
-        #     return self.__getitem__((index + 1) % self.__len__())
-
-        mask_path = img_path + '_mask.png'
-        mask = cv2.imread(mask_path)
+        # mask_path = img_path + '_mask.png'
+        mask = cv2.imread(img_path)
         if mask is not None:
-            mask = mask[:, :, 2]
+            mask = mask[:,:,2]
         else:
             return self.__getitem__((index + 1) % self.__len__())
-
+        mask[mask>100]=255
+        mask[mask<=100] = 0
         im_H,im_W = mask.shape[0], mask.shape[1]
         coord_2d = get_2d_coord_np(im_W, im_H).transpose(1, 2, 0)
         # aggragate information about the selected object
-        inst_id = gts['instance_ids'][idx]
-        rmin, rmax, cmin, cmax = get_bbox(gts['bboxes'][idx])
+        # inst_id = gts['instance_ids'][idx]
+        plt.figure()
+        plt.imshow(mask)
+        plt.show()
+        instance_id = np.unique(mask)[1]
+        instance = np.argwhere(mask == instance_id)
+        min_y,min_x = np.min(instance,axis=0)
+        max_y,max_x = np.max(instance,axis=0)
+        bboxes = [max_y, min_x, min_y, max_x]
+        rmin, rmax, cmin, cmax = get_bbox(bboxes)
         # here resize and crop to a fixed size 256 x 256
         bbox_xyxy = np.array([cmin, rmin, cmax, rmax])
         bbox_center, scale = aug_bbox_DZI(FLAGS, bbox_xyxy, im_H, im_W)
@@ -240,8 +194,8 @@ class MaskDataset(data.Dataset):
         ).transpose(2, 0, 1)
 
         mask_target = mask.copy().astype(float)
-        mask_target[mask != inst_id] = 0.0
-        mask_target[mask == inst_id] = 1.0
+        mask_target[mask != instance_id] = 0.0
+        mask_target[mask == instance_id] = 1.0
 
         # plt.figure()
         # plt.imshow(mask_target)
@@ -256,33 +210,14 @@ class MaskDataset(data.Dataset):
         # plt.show()
 
         roi_mask = np.expand_dims(roi_mask, axis=0)
-        # roi_depth = crop_resize_by_warp_affine(
-        #     depth, bbox_center, scale, FLAGS.img_size, interpolation=cv2.INTER_NEAREST
-        # )
-
-        # roi_depth = np.expand_dims(roi_depth, axis=0)
-        # normalize depth
-        # depth_valid = roi_depth > 0
-        # if np.sum(depth_valid) <= 1.0:
-        #     return self.__getitem__((index + 1) % self.__len__())
-        # roi_m_d_valid = roi_mask.astype(bool) * depth_valid
-        # if np.sum(roi_m_d_valid) <= 1.0:
-        #     return self.__getitem__((index + 1) % self.__len__())
-        #
-        # depth_v_value = roi_depth[roi_m_d_valid]
-        # if (np.max(depth_v_value) - np.min(depth_v_value))==0:
-        #     depth_normalize = (roi_depth/np.min(depth_v_value))/2
-        # else:
-        #     depth_normalize = (roi_depth - np.min(depth_v_value)) / (np.max(depth_v_value) - np.min(depth_v_value))
-        # depth_normalize[~roi_m_d_valid] = 0.0
-        # cat_id, rotation translation and scale
-        cat_id = gts['class_ids'][idx] - 1  # convert to 0-indexed
+        catid_cad = img_path.split('/')[-2].split('-')[0]
+        cat_id = self.shapenetid2cat_name_CAMERA[catid_cad]  # convert to 0-indexed
         # note that this is nocs model, normalized along diagonal axis
-        model_name = gts['shapenet_instance_id'][idx]
+        model_name = img_path.split('/')[-2]
 
         model = self.models[model_name]
         # model = self.models[model_name].astype(float)  # 1024 points
-        nocs_scale = gts['scales'][idx]  # nocs_scale = image file / model file
+        nocs_scale = [1,1,1]  # nocs_scale = image file / model file
         # transfer nocs_scales(3) ---> nocs_scales(1), np.mean()
         nocs_scale = np.mean(nocs_scale)
         
@@ -290,8 +225,10 @@ class MaskDataset(data.Dataset):
         fsnet_scale, mean_shape = self.get_fs_net_scale(self.id2cat_name[str(cat_id + 1)], model, nocs_scale)
         fsnet_scale = fsnet_scale / 1000.0
         mean_shape = mean_shape / 1000.0
-        rotation = gts['rotations'][idx]
-        translation = gts['translations'][idx]
+
+        filename = img_path.split('/')[-1]
+        rotation = self.get_rotation(float(filename.split('-')[0]), float(filename.split('-')[1]), float(filename.split('-')[2].split('.')[0]))
+        translation = [0,0,1.5]
 
         # dense depth map
         # dense_depth = depth_normalize
@@ -303,23 +240,17 @@ class MaskDataset(data.Dataset):
         # add nnoise to roi_mask
         roi_mask_def = defor_2D(roi_mask, rand_r=FLAGS.roi_mask_r, rand_pro=FLAGS.roi_mask_pro)
 
-        # pcl_in = self._depth_to_pcl(roi_depth, out_camK, roi_coord_2d, roi_mask_def) / 1000.0
-        # if len(pcl_in) < 50:
-        #     return self.__getitem__((index + 1) % self.__len__())
         pcl_in = self._sample_points(model, FLAGS.random_points)
 
         # generate augmentation parameters
         bb_aug, rt_aug_t, rt_aug_R = self.generate_aug_parameters()
 
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.imshow(roi_img.transpose((1,2,0)))
-        # plt.show()
-        #
-        # plt.figure()
-        # plt.imshow(roi_mask.transpose((1,2,0)))
-        # plt.show()
-
+        out_camK = np.asarray([
+            [435.19,    0.,  239.9,   0.],
+            [  0.,  435.19,  179.91, 0.  ],
+            [  0.,    0.,    1.,    0.  ],
+            [  0.,    0.,    0.,    1.  ]]
+        ) # 720 * 960
 
         data_dict = {}
         data_dict['pcl_in'] = torch.as_tensor(pcl_in.astype(float)).contiguous()
@@ -344,6 +275,31 @@ class MaskDataset(data.Dataset):
         data_dict['nocs_scale'] = torch.as_tensor(nocs_scale, dtype=torch.float32).contiguous()
 
         return data_dict
+
+    def get_rotation(self, theta_x: float, theta_y: float, theta_z: float):
+
+        # 将角度转换为弧度
+        roll_rad = np.radians(theta_x)
+        pitch_rad = np.radians(theta_y)
+        yaw_rad = np.radians(theta_z)
+
+        # 计算旋转矩阵
+        Rz = np.array([[np.cos(yaw_rad), -np.sin(yaw_rad), 0],
+                       [np.sin(yaw_rad), np.cos(yaw_rad), 0],
+                       [0, 0, 1]])
+
+        Ry = np.array([[np.cos(pitch_rad), 0, np.sin(pitch_rad)],
+                       [0, 1, 0],
+                       [-np.sin(pitch_rad), 0, np.cos(pitch_rad)]])
+
+        Rx = np.array([[1, 0, 0],
+                       [0, np.cos(roll_rad), -np.sin(roll_rad)],
+                       [0, np.sin(roll_rad), np.cos(roll_rad)]])
+
+        # 旋转矩阵相乘得到最终的旋转矩阵
+        R = np.matmul(np.matmul(Rz, Ry), Rx)
+
+        return R
 
     def _sample_points(self, pcl, n_pts):
         """ Down sample the point cloud using farthest point sampling.
@@ -481,7 +437,7 @@ class MaskDataset(data.Dataset):
 
 import open3d as o3d
 def main(argv):
-    test_data = MaskDataset(source=None, mode='train', data_dir='/home/aston/Desktop/Datasets/pose_data', per_obj='bed')
+    test_data = CADMaskDataset(source=None, mode='train', data_dir='/home/aston/Desktop/Datasets/pose_data', per_obj='bin')
     loader = torch.utils.data.DataLoader(
         test_data,
         batch_size=2,
