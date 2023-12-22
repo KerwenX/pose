@@ -16,6 +16,7 @@ from network.HSPose import HSPose
 FLAGS = flags.FLAGS
 from datasets.load_data import PoseDataset
 from datasets.load_data_roca import ScanNetDataset
+from datasets.load_data_new import MaskDataset
 
 from tqdm import tqdm
 import time
@@ -33,17 +34,18 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 def train(argv):
     # mode = train / test
-    mode = 'test'
+    mode = 'train'
 
     FLAGS.resume = True
-    FLAGS.resume_model = '/home/aston/Desktop/python/HS-Pose/engine/output/models/distr/model_149.pth'
+    FLAGS.per_obj = 'bookcase'
+    FLAGS.resume_model = f'/home/aston/Desktop/python/pose/engine/output/models/{FLAGS.per_obj}_model_149.pth'
     FLAGS.model_save = 'eval'
     FLAGS.train = False
 
     # build dataset annd dataloader
     # train_config_list = ['GPVPose','mytrain']
-    FLAGS.batch_size = 2
-    FLAGS.num_workers = 1
+    FLAGS.batch_size = 4
+    FLAGS.num_workers = 8
     index = 1
 
     if index == 0:
@@ -57,7 +59,7 @@ def train(argv):
         FLAGS.obj_c = 9
         FLAGS.feat_c_R = 1289
         FLAGS.feat_c_ts = 1292
-        train_dataset = ScanNetDataset(source=FLAGS.dataset, mode=mode,
+        train_dataset = MaskDataset(source=FLAGS.dataset, mode=mode,
                                        data_dir=FLAGS.dataset_dir, per_obj=FLAGS.per_obj)
 
     Train_stage = 'PoseNet_only'
@@ -100,11 +102,12 @@ def train(argv):
                                                    num_workers=FLAGS.num_workers, pin_memory=True,
                                                    prefetch_factor = 4,
                                                    worker_init_fn =seed_worker,
-                                                   shuffle=True )
+                                                   shuffle=False )
     network.eval()
     global_step = train_steps * s_epoch  # record the number iteration
     # count = 0
     result = []
+    torch.cuda.empty_cache()
     for epoch in range(s_epoch, FLAGS.total_epoch):
         i = 0
 
@@ -124,7 +127,7 @@ def train(argv):
                       # model_point=data['model_point'].to(device).float(),
                       # nocs_scale=data['nocs_scale'].to(device).float(),
                       # do_loss=True,
-                roi_img=data['roi_img'].to(device).float(),
+                # roi_img=data['roi_img'].to(device).float(),
                 roi_mask=data['roi_mask'].to(device).float()
             )
 
@@ -224,7 +227,7 @@ def train(argv):
         #         '{0}/model_{1:02d}.pth'.format(FLAGS.model_save, epoch))
         torch.cuda.empty_cache()
 
-        with open(f'{mode}_result.pkl', 'wb') as f:
+        with open(f'{FLAGS.per_obj}_{mode}_result.pkl', 'wb') as f:
             pickle.dump(result, f)
 
         break
