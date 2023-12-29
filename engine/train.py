@@ -98,14 +98,14 @@ def train(argv):
                       PC=data['pcl_in'].to(device).float(),
                       gt_R=data['rotation'].to(device).float(),
                       gt_t=data['translation'].to(device).float(),
-                      gt_s=data['fsnet_scale'].to(device).float(),
+                      gt_s=data['nocs_scale'].to(device).float(),
                       # mean_shape=data['mean_shape'].to(device).float(),
                       sym=data['sym_info'].to(device).float(),
                       # aug_bb=data['aug_bb'].to(device).float(),
                       # aug_rt_t=data['aug_rt_t'].to(device).float(),
                       # aug_rt_r=data['aug_rt_R'].to(device).float(),
                       # model_point=data['model_point'].to(device).float(),
-                      nocs_scale=data['nocs_scale'].to(device).float(),
+                      # nocs_scale=data['nocs_scale'].to(device).float(),
                       do_loss=True,
                 # roi_img=data['roi_img'].to(device).float(),
                 roi_mask=data['roi_mask'].to(device).float()
@@ -152,7 +152,7 @@ def train(argv):
                         'scheduler': scheduler.state_dict(),
                         'optimizer': optimizer.state_dict(),
                     },
-                    '{0}/{}_model_{:02d}.pth'.format(FLAGS.model_save, FLAGS.per_obj, epoch))
+                    '{}/{}_model_{:02d}.pth'.format(FLAGS.model_save, FLAGS.per_obj, epoch))
             else:
                 torch.save(
                     {
@@ -162,7 +162,7 @@ def train(argv):
                     'scheduler': scheduler.state_dict(),
                     'optimizer': optimizer.state_dict(),
                     },
-                    '{0}/model_{:02d}.pth'.format(FLAGS.model_save, epoch))
+                    '{}/model_{:02d}.pth'.format(FLAGS.model_save, epoch))
         torch.cuda.empty_cache()
 
 # def write_to_summary(writter, optimizer, total_loss, fsnet_loss, prop_loss, recon_loss, global_step):

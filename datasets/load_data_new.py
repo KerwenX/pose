@@ -120,10 +120,13 @@ class MaskDataset(data.Dataset):
 
             # img_list_obj = 0
 
-
             #  if use only one dataset
             #  directly load all data
-            img_list = img_list_obj
+            if mode=='train':
+                img_list = img_list_obj[:int(0.7*len(img_list_obj))]
+            else:
+                img_list = img_list_obj[int(0.7*len(img_list_obj)):]
+
 
         self.img_list = img_list
         self.length = len(self.img_list)
@@ -284,12 +287,12 @@ class MaskDataset(data.Dataset):
         # model = self.models[model_name].astype(float)  # 1024 points
         nocs_scale = gts['scales'][idx]  # nocs_scale = image file / model file
         # transfer nocs_scales(3) ---> nocs_scales(1), np.mean()
-        nocs_scale = np.mean(nocs_scale)
+        # nocs_scale =
         
         # fsnet scale (from model) scale residual
-        fsnet_scale, mean_shape = self.get_fs_net_scale(self.id2cat_name[str(cat_id + 1)], model, nocs_scale)
-        fsnet_scale = fsnet_scale / 1000.0
-        mean_shape = mean_shape / 1000.0
+        # fsnet_scale, mean_shape = self.get_fs_net_scale(self.id2cat_name[str(cat_id + 1)], model, np.mean(nocs_scale))
+        # fsnet_scale = fsnet_scale / 1000.0
+        # mean_shape = mean_shape / 1000.0
         rotation = gts['rotations'][idx]
         translation = gts['translations'][idx]
 
@@ -332,10 +335,10 @@ class MaskDataset(data.Dataset):
         data_dict['cat_id'] = torch.as_tensor(cat_id, dtype=torch.float32).contiguous()
         data_dict['rotation'] = torch.as_tensor(rotation, dtype=torch.float32).contiguous()
         data_dict['translation'] = torch.as_tensor(translation, dtype=torch.float32).contiguous()
-        data_dict['fsnet_scale'] = torch.as_tensor(fsnet_scale, dtype=torch.float32).contiguous()
+        # data_dict['fsnet_scale'] = torch.as_tensor(fsnet_scale, dtype=torch.float32).contiguous()
         data_dict['sym_info'] = torch.as_tensor(sym_info.astype(float)).contiguous()
         data_dict['roi_coord_2d'] = torch.as_tensor(roi_coord_2d, dtype=torch.float32).contiguous()
-        data_dict['mean_shape'] = torch.as_tensor(mean_shape, dtype=torch.float32).contiguous()
+        # data_dict['mean_shape'] = torch.as_tensor(mean_shape, dtype=torch.float32).contiguous()
         data_dict['aug_bb'] = torch.as_tensor(bb_aug, dtype=torch.float32).contiguous()
         data_dict['aug_rt_t'] = torch.as_tensor(rt_aug_t, dtype=torch.float32).contiguous()
         data_dict['aug_rt_R'] = torch.as_tensor(rt_aug_R, dtype=torch.float32).contiguous()

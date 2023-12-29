@@ -3,8 +3,12 @@ import pickle
 import random
 
 import math
+
+import numpy
 import torch
 from absl import app
+import sys
+sys.path.insert(0,'/home/aston/Desktop/python/pose')
 
 from config.config import *
 from tools.training_utils import build_lr_rate, build_optimizer
@@ -34,17 +38,19 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 def train(argv):
     # mode = train / test
-    mode = 'train'
+    mode = 'test'
 
     FLAGS.resume = True
-    FLAGS.per_obj = 'bookcase'
+    FLAGS.per_obj = 'bathtub'
+    print("===============================",FLAGS.per_obj,"==============================")
     FLAGS.resume_model = f'/home/aston/Desktop/python/pose/engine/output/models/{FLAGS.per_obj}_model_149.pth'
+    # FLAGS.resume_model = f'/home/aston/Desktop/python/pose/engine/output/models/chair_model_59.pth'
     FLAGS.model_save = 'eval'
     FLAGS.train = False
 
     # build dataset annd dataloader
     # train_config_list = ['GPVPose','mytrain']
-    FLAGS.batch_size = 4
+    FLAGS.batch_size = 3
     FLAGS.num_workers = 8
     index = 1
 
@@ -108,6 +114,7 @@ def train(argv):
     # count = 0
     result = []
     torch.cuda.empty_cache()
+    output = []
     for epoch in range(s_epoch, FLAGS.total_epoch):
         i = 0
 
@@ -119,7 +126,7 @@ def train(argv):
                       # gt_R=data['rotation'].to(device).float(),
                       # gt_t=data['translation'].to(device).float(),
                       # gt_s=data['fsnet_scale'].to(device).float(),
-                      mean_shape=data['mean_shape'].to(device).float(),
+                      # mean_shape=data['mean_shape'].to(device).float(),
                       sym=data['sym_info'].to(device).float(),
                       # aug_bb=data['aug_bb'].to(device).float(),
                       # aug_rt_t=data['aug_rt_t'].to(device).float(),
@@ -138,10 +145,29 @@ def train(argv):
             p_s = output_dict['Pred_s'].detach()
             f_green_R = output_dict['f_green_R'].detach()
             f_red_R = output_dict['f_red_R'].detach()
-            pred_s = p_s + data['mean_shape'].to(device).float()
+            pred_s = p_s
             pred_RT = generate_RT([p_green_R_vec, p_red_R_vec], [f_green_R, f_red_R], p_T, mode='vec', sym=sym)
 
-            gt_s = data['nocs_scale']
+            gt_s = data['nocs_scale'].numpy()
+
+            new_s = []
+            s_differ = []
+            for index in range(pred_RT.shape[0]):
+                pc_temp = data['pcl_in'][index]
+                s_temp = pred_s[index].cpu().numpy()
+                lx = max(pc_temp[:,0]) - min(pc_temp[:,0])
+                ly = max(pc_temp[:,1]) - min(pc_temp[:,1])
+                lz = max(pc_temp[:,2]) - min(pc_temp[:,2])
+                s_temp = np.asarray([s_temp[0]/lx,s_temp[1]/ly,s_temp[2]/lz])
+
+                s_differ.append(s_temp/gt_s[index])
+
+                new_s.append(s_temp)
+
+
+            s_differ = np.asarray(s_differ)
+            new_s = np.asarray(new_s)
+
             gt_r = data['rotation']
             gt_t = data['translation']
 
@@ -158,6 +184,16 @@ def train(argv):
 
             pred_RT = pred_RT.cpu().numpy()
             gt_r = gt_r.cpu().numpy()
+
+            for index in range(pred_RT.shape[0]):
+                temp_dict = {
+                    'pred_rt':pred_RT[index],
+                    'pred_s':new_s[index],
+                    'gt_rt':Transformations[index].cpu(),
+                    'gt_s':gt_s[index]
+                }
+                output.append(temp_dict)
+
 
             for index in range(pred_RT.shape[0]):
                 rotation_vector_R = Rotate.from_matrix(pred_RT[index][:3,:3]).as_rotvec()
@@ -181,7 +217,9 @@ def train(argv):
                 distance = np.linalg.norm(Translation_gt-Translation_pred)
                 # print(f"平均旋转误差： {average_R}度, 两个平移的距离：{distance}cm")
 
-                result.append([average_R,distance])
+
+
+                result.append([average_R,distance,s_differ])
 
             torch.cuda.empty_cache()
 
@@ -229,6 +267,9 @@ def train(argv):
 
         with open(f'{FLAGS.per_obj}_{mode}_result.pkl', 'wb') as f:
             pickle.dump(result, f)
+
+        with open(f'{FLAGS.per_obj}_{mode}_pose_output.pkl', 'wb') as f:
+            pickle.dump(output, f)
 
         break
 

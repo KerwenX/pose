@@ -1,6 +1,6 @@
 import pickle
 
-filename = '../bookcase_train_result.pkl'
+filename = '../sofa_test_result.pkl'
 with open(filename,'rb') as f:
     result = pickle.load(f)
 
@@ -39,7 +39,7 @@ print(
     f"10':{100*r10/total_number:.2f}% \n "
     f"5':{100*r5/total_number:.2f}% \n "
     f"5cm:{100*t5/total_number:.2f}% \n"
-    f"2cm:{100*t2/total_number:.2f}% \n"
+    f"2cm:{100*t2/total_number:.2f}% \n" 
     f"10'5cm:{100*r10_t5/total_number:.2f}% \n"
     f"10'2cm:{100*r10_t2/total_number:.2f}% \n"
     f"5'5cm:{100*r5_t5/total_number:.2f}% \n"
