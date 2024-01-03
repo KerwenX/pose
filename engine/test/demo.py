@@ -255,15 +255,24 @@ def predict(argv):
     FLAGS.obj_c = 9
     FLAGS.feat_c_R = 1289
     FLAGS.feat_c_ts = 1292
+    model_dir = '/home/aston/Desktop/Datasets/ShapeNet/ShapeNetCore.v2'
+    datadir = '/home/aston/Desktop/Datasets/pose_data'
+    ckpt_dir = '/home/aston/Desktop/python/pose/engine/output/models'
+    ckpt_epoch = 149
+    with open(os.path.join(datadir,'id2point.pkl'),'rb') as f:
+        id2points = pickle.load(f)
 
-    # get test scene
-    with open('demo_test.txt','r') as f:
-        filelist = f.readlines()
-    filelist = [name.strip() for name in filelist]
-    filename = filelist[10]
+    # output
+    output_dir = './output'
+    # os.makedirs(output_dir,exist_ok=True)
 
+    filename = FLAGS.filename
+    assert filename != "", "Filename is None"
+    output = os.path.join(output_dir,filename.split('/')[0])
+    os.makedirs(output,exist_ok=True)
+    output = os.path.join(output,filename.split('/')[1])
     # intrinsics
-    intrinsics_dir = '/home/aston/Desktop/Datasets/pose_data/intrinsics'
+    intrinsics_dir = os.path.join(datadir,'intrinsics')
     intrinsics_file = os.path.join(
         intrinsics_dir,
         filename.split('/')[0],
@@ -271,29 +280,32 @@ def predict(argv):
     )
     intrinsics = np.loadtxt(intrinsics_file)
 
-    model_dir = '/home/aston/Desktop/Datasets/ShapeNet/ShapeNetCore.v2'
+
     # mask
-    mask = cv2.imread(f'/home/aston/Desktop/Datasets/pose_data/ScanNOCS/{filename}_mask.png')
+    mask = cv2.imread(os.path.join(datadir,f'ScanNOCS/{filename}_mask.png'))
     mask = mask[:,:,2]
     # instances = np.unique(mask)
 
-    with open(f'/home/aston/Desktop/Datasets/pose_data/ScanNOCS/{filename}_label.pkl','rb') as f:
+    with open(os.path.join(datadir,f'ScanNOCS/{filename}_label.pkl'),'rb') as f:
         label = pickle.load(f)
 
-    with open('/home/aston/Desktop/Datasets/pose_data/id2point.pkl','rb') as f:
-        id2points = pickle.load(f)
-
-    img = cv2.imread(f'/home/aston/Desktop/Datasets/pose_data/ScanNOCS/{filename}_color.jpg')
+    img = cv2.imread(os.path.join(datadir,f'ScanNOCS/{filename}_color.jpg'))
     img = np.asarray(img)
-    fig,ax = plt.subplots()
-    ax.imshow(img)
+    fig,ax = plt.subplots(2,2)
+    ax[0,0].imshow(img)
+    ax[0,0].set_title('Image')
+    ax[0,0].axis('off')
+    ax[0,1].imshow(img)
     for index in range(len(label['class_ids'])):
         # y_max,x_min,y_min,x_max
         bbox = label['bboxes'][index]
         retangle = patches.Rectangle((bbox[1],bbox[2]),bbox[3]-bbox[1],bbox[0]-bbox[2],linewidth=1, edgecolor='r', facecolor='none')
-        ax.add_patch(retangle)
-        ax.text((bbox[1]+bbox[3])/2,(bbox[0]+bbox[2])/2,label['model_list'][index],verticalalignment='center', bbox=dict(facecolor='white', alpha=0.7))
-    plt.show()
+        ax[0,1].add_patch(retangle)
+        ax[0,1].text((bbox[1]+bbox[3])/2,(bbox[0]+bbox[2])/2,label['model_list'][index],verticalalignment='center', bbox=dict(facecolor='white', alpha=0.7))
+
+    ax[0,1].set_title('BBox')
+    ax[0,1].axis('off')
+    # plt.show()
 
     device = 'cuda'
 
@@ -313,7 +325,7 @@ def predict(argv):
         bbox = label['bboxes'][index]
         shapenet_id = label['shapenet_instance_id'][index]
         model_name = label['model_list'][index]
-        cat_id = label['class_ids'][index]
+        cat_id = label['class_ids'][index] - 1
         pc = id2points[shapenet_id]
         pc = _sample_points(pc,FLAGS.random_points)
         rotaiton = label['rotations'][index]
@@ -347,7 +359,7 @@ def predict(argv):
         # load checkpoint according to class name
         network = HSPose('PoseNet_only')
         network = network.to(device)
-        ckpt_path = f'/home/aston/Desktop/python/pose/engine/output/models/{model_name}_model_149.pth'
+        ckpt_path = os.path.join(ckpt_dir,f'{model_name}_model_{ckpt_epoch}.pth')
         state_dict = torch.load(ckpt_path, map_location='cuda:0')['posenet_state_dict']
         unnecessary_nets = [
             'posenet.face_recon.conv1d_block',
@@ -439,8 +451,8 @@ def predict(argv):
         res = np.append(res,s_error)
         error.append(res)
         # break
-
-    print(np.asarray(error))
+    np.savetxt(output+"_error.txt", np.asarray(error), delimiter=' ', fmt="%.4f")
+    # print(np.asarray(error))
 
     # 光栅化渲染
     raster.rasterize()
@@ -453,22 +465,36 @@ def predict(argv):
         # print(f' ================= {key} ===================== ')
         print("visual None ! ")
         # continue
-    plt.figure()
-    plt.imshow(instances)
-    plt.show()
+    mask[mask==255] = 0
+
+    ax[1,0].imshow(instances)
+    ax[1,0].set_title('pred_mask')
+    ax[1,0].axis('off')
+    # plt.subplot(1,2,2)
+    ax[1,1].imshow(mask)
+    ax[1,1].set_title('GT_mask')
+    ax[1,1].axis('off')
+
+    plt.tight_layout()
+    plt.savefig(output+".png", bbox_inches='tight',dpi=600)
+    # plt.show(dpi=600)
+
+    # clear
+    plt.clf()
+    plt.close()
     raster.clear_models()
 
     combined_mesh = o3d.geometry.TriangleMesh()
     for mesh in reconstruct_result:
         combined_mesh+=mesh
     combined_mesh.compute_vertex_normals()
-    o3d.visualization.draw_geometries([combined_mesh])
-
+    # o3d.visualization.draw_geometries([combined_mesh])
+    o3d.io.write_triangle_mesh(output+".ply", combined_mesh)
     # camera = o3d.camera.PinholeCameraIntrinsic()
     # camera.set_intrinsics(480,360,intrinsics[0][0],intrinsics[1][1],intrinsics[0][2],intrinsics[1][2])
     # render = o3d.visualization.
 
-    print('hello world !')
+    # print('hello world !')
 
 if __name__ == '__main__':
     app.run(predict)

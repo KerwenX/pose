@@ -5,7 +5,7 @@ import numpy as np
 import sys
 sys.path.append('/home/aston/Desktop/python/pose')
 from evaluation.eval_utils import compute_RT_errors
-
+from prettytable import PrettyTable
 def compute_RT_errors(sRT_1, sRT_2):
     """
     Args:
@@ -39,7 +39,7 @@ def compute_RT_errors(sRT_1, sRT_2):
 
     return result
 
-cats = ['cabinet','bookcase','bed','bathtub','sofa']
+cats = ['cabinet','bookcase','bed','bathtub','sofa','bin','table','chair']
 result_dict = {}
 for catname in cats:
     # catname = 'cabinet'
@@ -103,24 +103,48 @@ for catname in cats:
         if s_error<0.2:
             s20+=1
 
-    print(f"======={catname}========")
-    print("5 degree, 2cm: {:.3f}'.".format(r5_t2/total))
-    print("5 degree, 5cm: {:.3f}'.".format(r5_t5/total))
-    print("10 degree, 2cm: {:.3f}'".format(r10_t2/total))
-    print("10 degree, 5cm: {:.3f}'".format(r10_t5/total))
-    print("10 degree, 10cm: {:.3f}".format(r10_t10/total))
-    print("5 degree: {:.3f}".format(r5/total))
-    print("10 degree: {:.3f}".format(r10/total))
-    print("2cm: {:.3f}".format(t2/total))
-    print("5cm: {:.3f}".format(t5/total))
-    print("10cm: {:.3f}".format(t10/total))
-    print("20 degree, 20cm, 20%: {:.3f}".format(r20_t20_s20/total))
-    print("20 degree: {:.3f}".format(r20/total))
-    print("20cm: {:.3f}".format(t20/total))
-    print("20%: {:.3f}".format(s20/total))
+    # print(f"======={catname}========")
+    # print("5 degree, 2cm: {:.3f}'.".format(r5_t2/total))
+    # print("5 degree, 5cm: {:.3f}'.".format(r5_t5/total))
+    # print("10 degree, 2cm: {:.3f}'".format(r10_t2/total))
+    # print("10 degree, 5cm: {:.3f}'".format(r10_t5/total))
+    # print("10 degree, 10cm: {:.3f}".format(r10_t10/total))
+    # print("5 degree: {:.3f}".format(r5/total))
+    # print("10 degree: {:.3f}".format(r10/total))
+    # print("2cm: {:.3f}".format(t2/total))
+    # print("5cm: {:.3f}".format(t5/total))
+    # print("10cm: {:.3f}".format(t10/total))
+    # print("20 degree, 20cm, 20%: {:.3f}".format(r20_t20_s20/total))
+    # print("20 degree: {:.3f}".format(r20/total))
+    # print("20cm: {:.3f}".format(t20/total))
+    # print("20%: {:.3f}".format(s20/total))
 
-    result_dict[catname] = r20_t20_s20/total
+    result_dict[catname] = [
+        catname,
+        r5_t2 / total,
+        r5_t5 / total,
+        r10_t2 / total,
+        r10_t5 / total,
+        r10_t10 / total,
+        r5 / total,
+        r10 / total,
+        t2/total,
+        t5/total,
+        t10/total,
+        r20/total,
+        t20/total,
+        s20/total,
+        r20_t20_s20/total
+    ]
 
-print(result_dict)
+# print(result_dict)
+
+table = PrettyTable()
+table.field_names = ['Category',"5\u00b02cm","5\u00b05cm","10\u00b02cm","10\u00b05cm","10\u00b010cm",
+                     "5\u00b0","10\u00b0","2cm","5cm","10cm","20\u00b0","20cm","20%(scale)","20\u00b0 20cm 20%"]
+for cat in result_dict:
+    table.add_row(result_dict[cat])
+table.float_format = ".4"
+print(table)
 
 # print('hello world !')

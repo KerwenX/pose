@@ -124,4 +124,7 @@ flags.DEFINE_integer('resume_point', 0, 'the epoch to continue the training')
 flags.DEFINE_integer('eval_seed', -1, 'evaluation seed for reproducibility')
 flags.DEFINE_integer('eval_inference_only', 0, 'inference without evaluation')
 
+###################demo###########################
+flags.DEFINE_string('filename',"","the test file of demo")
+
 

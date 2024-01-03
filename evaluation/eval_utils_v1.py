@@ -169,6 +169,7 @@ def compute_RT_degree_cm_symmetry(RT_1, RT_2, class_id, handle_visibility, synse
 
 def get_3d_bbox(scale, shift=0):
     """
+    生成3D bbox
     Input:
         scale: [3] or scalar
         shift: [3] or scalar
@@ -201,6 +202,7 @@ def get_3d_bbox(scale, shift=0):
 
 def transform_coordinates_3d(coordinates, RT):
     """
+    使用RT对坐标点进行变换
     Input:
         coordinates: [3, N]
         RT: [4, 4]

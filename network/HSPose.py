@@ -62,9 +62,8 @@ class HSPose(nn.Module):
         #         gt_t = gt_t_da
         #         gt_s = gt_s_da
 
-        # recon, face_normal, face_dis, face_f, p_green_R, p_red_R, f_green_R, f_red_R, \
-        p_green_R, p_red_R, f_green_R, f_red_R, \
-        Pred_T, Pred_s = self.posenet(PC, obj_id, roi_mask)
+        # recon, face_normal, face_dis, face_f, p_green_R, p_red_R, f_green_R, f_red_R,
+        p_green_R, p_red_R, f_green_R, f_red_R,Pred_T, Pred_s = self.posenet(PC, obj_id, roi_mask)
 
         output_dict['mask'] = obj_mask
         output_dict['sketch'] = sketch
