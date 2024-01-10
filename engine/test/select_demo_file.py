@@ -18,7 +18,7 @@ catid2_catname = {
     '03001627': 'chair',
     '02747177': 'bin',
     '02933112': 'cabinet',
-    # '03211117': 'display',
+    '03211117': 'display',
     '04379243': 'table',
     '02871439': 'bookcase',
     '02808440': 'bathtub'

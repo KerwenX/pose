@@ -126,5 +126,5 @@ flags.DEFINE_integer('eval_inference_only', 0, 'inference without evaluation')
 
 ###################demo###########################
 flags.DEFINE_string('filename',"","the test file of demo")
-
+flags.DEFINE_integer('visual',0,"0 is false, 1 true")
 

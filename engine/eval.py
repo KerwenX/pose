@@ -41,7 +41,7 @@ def train(argv):
     mode = 'test'
 
     FLAGS.resume = True
-    FLAGS.per_obj = 'chair'
+    FLAGS.per_obj = 'display'
     print("===============================",FLAGS.per_obj,"==============================")
     FLAGS.resume_model = f'/home/aston/Desktop/python/pose/engine/output/models/{FLAGS.per_obj}_model_149.pth'
     # FLAGS.resume_model = f'/home/aston/Desktop/python/pose/engine/output/models/chair_model_59.pth'

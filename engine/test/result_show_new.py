@@ -39,7 +39,7 @@ def compute_RT_errors(sRT_1, sRT_2):
 
     return result
 
-cats = ['cabinet','bookcase','bed','bathtub','sofa','bin','table','chair']
+cats = ['cabinet','bookcase','bed','bathtub','sofa','bin','table','chair','display']
 result_dict = {}
 for catname in cats:
     # catname = 'cabinet'

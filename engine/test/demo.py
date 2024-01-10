@@ -294,17 +294,24 @@ def predict(argv):
     fig,ax = plt.subplots(2,2)
     ax[0,0].imshow(img)
     ax[0,0].set_title('Image')
-    ax[0,0].axis('off')
+    # ax[0,0].axis('off')
     ax[0,1].imshow(img)
     for index in range(len(label['class_ids'])):
         # y_max,x_min,y_min,x_max
         bbox = label['bboxes'][index]
-        retangle = patches.Rectangle((bbox[1],bbox[2]),bbox[3]-bbox[1],bbox[0]-bbox[2],linewidth=1, edgecolor='r', facecolor='none')
+        retangle = patches.Rectangle(
+            (bbox[1],bbox[2]),
+            bbox[3]-bbox[1],
+            bbox[0]-bbox[2],
+            linewidth=1,
+            edgecolor='r',
+            facecolor='none'
+        )
         ax[0,1].add_patch(retangle)
         ax[0,1].text((bbox[1]+bbox[3])/2,(bbox[0]+bbox[2])/2,label['model_list'][index],verticalalignment='center', bbox=dict(facecolor='white', alpha=0.7))
 
     ax[0,1].set_title('BBox')
-    ax[0,1].axis('off')
+    # ax[0,1].axis('off')
     # plt.show()
 
     device = 'cuda'
@@ -477,7 +484,9 @@ def predict(argv):
 
     plt.tight_layout()
     plt.savefig(output+".png", bbox_inches='tight',dpi=600)
-    # plt.show(dpi=600)
+    if FLAGS.visual==1:
+        # visual
+        plt.show(dpi=600)
 
     # clear
     plt.clf()
@@ -488,11 +497,10 @@ def predict(argv):
     for mesh in reconstruct_result:
         combined_mesh+=mesh
     combined_mesh.compute_vertex_normals()
-    # o3d.visualization.draw_geometries([combined_mesh])
+    if FLAGS.visual == 1:
+        # visual
+        o3d.visualization.draw_geometries([combined_mesh])
     o3d.io.write_triangle_mesh(output+".ply", combined_mesh)
-    # camera = o3d.camera.PinholeCameraIntrinsic()
-    # camera.set_intrinsics(480,360,intrinsics[0][0],intrinsics[1][1],intrinsics[0][2],intrinsics[1][2])
-    # render = o3d.visualization.
 
     # print('hello world !')
 

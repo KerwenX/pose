@@ -122,7 +122,7 @@ class MaskDataset(data.Dataset):
 
             #  if use only one dataset
             #  directly load all data
-            if mode=='train':
+            if mode == 'train':
                 img_list = img_list_obj[:int(0.7*len(img_list_obj))]
             else:
                 img_list = img_list_obj[int(0.7*len(img_list_obj)):]
